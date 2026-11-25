@@ -31,6 +31,8 @@ const voteButton = document.getElementById('vote');
 const message = document.getElementById('message');
 const STORAGE_KEY = 'mirai-request-hour-voter-key';
 const VOTED_PREFIX = 'mirai-request-hour-voted-';
+const VOTING_DEADLINE = new Date('2026-12-05T00:00:00+09:00').getTime();
+const VOTING_CLOSED_MESSAGE = '投票期間は終了しました。たくさんのご参加ありがとうございました♡';
 
 let selectedSongId = null;
 
@@ -44,6 +46,10 @@ function japanDate() {
 
   const values = Object.fromEntries(parts.map(part => [part.type, part.value]));
   return values.year + '-' + values.month + '-' + values.day;
+}
+
+function isVotingClosed() {
+  return Date.now() >= VOTING_DEADLINE;
 }
 
 function getVoterKey() {
@@ -80,7 +86,10 @@ function lockVoting() {
 const today = japanDate();
 const votedToday = localStorage.getItem(VOTED_PREFIX + today);
 
-if (votedToday) {
+if (isVotingClosed()) {
+  lockVoting();
+  showMessage(VOTING_CLOSED_MESSAGE);
+} else if (votedToday) {
   lockVoting();
   showMessage('本日の投票は受付済みです♡ また明日もお待ちしています！');
 } else {
@@ -100,6 +109,12 @@ if (votedToday) {
   });
 
   voteButton.addEventListener('click', async () => {
+    if (isVotingClosed()) {
+      lockVoting();
+      showMessage(VOTING_CLOSED_MESSAGE);
+      return;
+    }
+
     if (!selectedSongId || voteButton.disabled) return;
 
     const voterKey = getVoterKey();
